@@ -32,14 +32,9 @@ static void* timer_run(void* arg)
 	timer_server_handle_t *handle = (timer_server_handle_t *)arg;
 	if (NULL == handle) return NULL;
 
-	if (0 != pthread_mutex_init(&handle->mutex_, NULL)) {
-		printf("%s,%d errors: pthread_mutex_init error \n",__FUNCTION__,__LINE__);
-		return NULL;
-	}
-
     for (; handle->active_ ; ) {
         struct epoll_event events[MAXFDS] ;
-        int nfds = epoll_wait (handle->epoll_fd_, events, MAXFDS, -1);
+        int nfds = epoll_wait (handle->epoll_fd_, events, MAXFDS, 20);
         for (int i = 0; i < nfds; ++i)
         {
     		ctimer *timer = NULL;
@@ -74,9 +69,6 @@ static void* timer_run(void* arg)
 		}
 	}
 	pthread_mutex_unlock(&handle->mutex_);
-	pthread_mutex_destroy(&handle->mutex_);
-	free(handle);
-    handle = NULL;
 
 	printf("%s,%d Standard simple_timer thread exit  \n",__FUNCTION__,__LINE__);
     return NULL ;
@@ -89,7 +81,11 @@ timer_server_handle_t * timer_server_init(int max_num /* 最大定时器个数 *
 		fprintf(stderr, "timer_server create failed\n");
 		return NULL;
 	}
-
+	int ret = pthread_mutex_init(&handle->mutex_, NULL);
+	if (0 != ret) {
+		fprintf(stderr, "pthread_mutex_init failed\n");
+		goto timer_epoll_create_failed;
+	}
 	handle->init_success_ = 1;
 	handle->active_ = 1;
 	handle->fd_max_ = -1;
@@ -116,6 +112,8 @@ void timer_server_uninit(timer_server_handle_t *timer_handle)
 {
 	timer_handle->active_ = 0;
 	pthread_join(timer_handle->tid_, NULL);
+	pthread_mutex_destroy(&timer_handle->mutex_);
+	free(timer_handle);
 }
 
 int timer_server_addtimer(timer_server_handle_t *timer_handle, ctimer *t)

@@ -4,7 +4,10 @@
 #include <pthread.h>
 #include "uthash.h"
 
+struct _ctimer;
+
 typedef int(*ctimer_callback)(struct _ctimer *);
+
 typedef struct _ctimer{
 	int                 fd;
     double              timer_internal_;
