@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include "simple_timer.h"
 
 int timer_cb1(ctimer *timer)
@@ -54,6 +56,9 @@ int main(int argc, char *argv[])
 	timer_server_uninit(timer_handle);
 
 	getchar();
+
+	free(user_data1);
+	free(user_data2);
 
 	return 0;
 }
